@@ -4,11 +4,16 @@ const RAW_API =
   process.env.API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api-node-portif-lio.onrender.com/api";
+
 const BASE = RAW_API.replace(/\/$/, "");
 const API_URL = BASE.endsWith("/api") ? BASE : `${BASE}/api`;
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function PUT(req: Request, context: RouteContext) {
+  const { id } = await context.params;
   try {
     const body = await req.json().catch(() => null);
     const auth = req.headers.get("authorization") || undefined;
@@ -33,13 +38,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json(data ?? { ok: upstream.ok }, {
       status: upstream.status,
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Proxy put failed" }, { status: 502 });
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(req: Request, context: RouteContext) {
+  const { id } = await context.params;
   try {
     const auth = req.headers.get("authorization") || undefined;
 
@@ -61,7 +66,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json(data ?? { ok: upstream.ok }, {
       status: upstream.status,
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Proxy delete failed" }, { status: 502 });
   }
 }

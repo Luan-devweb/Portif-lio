@@ -7,8 +7,8 @@ const RAW_API =
 const BASE = RAW_API.replace(/\/$/, "");
 const API_URL = BASE.endsWith("/api") ? BASE : `${BASE}/api`;
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const body = await req.json().catch(() => null);
     const auth = req.headers.get("authorization") || undefined;
@@ -38,8 +38,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const auth = req.headers.get("authorization") || undefined;
     const upstream = await fetch(`${API_URL}/projects/${id}`, {

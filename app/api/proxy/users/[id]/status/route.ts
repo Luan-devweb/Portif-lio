@@ -7,8 +7,8 @@ const RAW_API =
 const BASE = RAW_API.replace(/\/$/, "");
 const API_URL = BASE.endsWith("/api") ? BASE : `${BASE}/api`;
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const body = await request.json().catch(() => null);
 
