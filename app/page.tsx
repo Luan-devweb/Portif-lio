@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-
 import { motion } from "framer-motion";
 import { Mail, Phone } from "lucide-react";
 import {
@@ -46,19 +45,20 @@ const resultsData = [
     suffix: "+",
   },
   {
-    label: "Satisfação de clientes",
+    label: "Satisfacao de clientes",
     value: 95,
     color: "text-emerald-300",
     suffix: "%",
   },
   { label: "Leads gerados", value: 1800, color: "text-blue-300", suffix: "+" },
   {
-    label: "Usuários impactados",
+    label: "Usuarios impactados",
     value: 12000,
     color: "text-purple-300",
     suffix: "+",
   },
 ];
+
 interface Project {
   id: string;
   name: string;
@@ -70,484 +70,412 @@ interface Project {
 export default function Page() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const skillsRef = useRef<HTMLDivElement | null>(null);
-  const [animatedSkills, setAnimatedSkills] = useState(skillsData.map(() => 0));
+  const [animatedSkills, setAnimatedSkills] = useState(
+    skillsData.map(() => 0)
+  );
   const [animatedResults, setAnimatedResults] = useState(
     resultsData.map(() => 0)
   );
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const skillsRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await fetch(`/api/proxy/projects`);
-        if (!res.ok) throw new Error("Erro ao carregar projetos");
-        const data = await res.json();
-        setProjects(data);
+        const response = await fetch(`${API_URL}/api/projects`);
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        } else {
+          // Usar projetos estaticos como fallback se a API falhar
+          const fallbackProjects: Project[] = [
+            {
+              id: "1",
+              name: "Flowstate — Web App",
+              description:
+                "Aplicacao web completa para gerenciamento de tarefas e produtividade",
+              isPreview: false,
+              link: "https://flowstate-app.vercel.app",
+            },
+            {
+              id: "2",
+              name: "Portfolio Interativo",
+              description: "Landing designer com micro-interacoes",
+              isPreview: false,
+              link: "https://portfolio-example.vercel.app",
+            },
+          ];
+          setProjects(fallbackProjects);
+        }
       } catch (error) {
-        console.error("Erro ao carregar projetos:", error);
-        // Usar projetos estáticos como fallback se a API falhar
-        setProjects([
-          {
-            id: "1",
-            name: "Flowstate — Web App",
-            description: "Redesign de e-commerce com UI moderna",
-            isPreview: false,
-            link: "/imagem2.jpg",
-          },
-          {
-            id: "2",
-            name: "Redsun Dashboard",
-            description: "Dashboard analytics com foco em dados",
-            isPreview: false,
-            link: "/imagem1.jpg",
-          },
-          {
-            id: "3",
-            name: "Portfolio Visual",
-            description: "Landing designer com micro-interações",
-            isPreview: false,
-            link: "/imagem4.jpg",
-          },
-        ]);
+        console.error("Erro ao buscar projetos:", error);
+        setProjects([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchProjects();
   }, []);
 
+  // Animacao das Skills
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-
-          // Animação das Skills
-          skillsData.forEach((skill, i) => {
-            let start = 0;
-            const interval = setInterval(() => {
-              start += 1;
-              setAnimatedSkills((prev) => {
-                const newSkills = [...prev];
-                newSkills[i] = start;
-                return newSkills;
-              });
-              if (start >= skill.value) clearInterval(interval);
-            }, 15);
-          });
-
-          // Animação dos Results
-          resultsData.forEach((res, i) => {
-            let start = 0;
-            const interval = setInterval(() => {
-              start += Math.ceil(res.value / 100); // aumenta mais rápido para valores grandes
-              setAnimatedResults((prev) => {
-                const newResults = [...prev];
-                newResults[i] = Math.min(start, res.value);
-                return newResults;
-              });
-              if (start >= res.value) clearInterval(interval);
-            }, 20);
-          });
-        }
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            skillsData.forEach((skill, index) => {
+              setTimeout(() => {
+                let start = 0;
+                const increment = skill.value / 50;
+                const timer = setInterval(() => {
+                  start += increment;
+                  if (start >= skill.value) {
+                    start = skill.value;
+                    clearInterval(timer);
+                  }
+                  setAnimatedSkills((prev) => {
+                    const newSkills = [...prev];
+                    newSkills[index] = Math.round(start);
+                    return newSkills;
+                  });
+                }, 30);
+              }, index * 200);
+            });
+          }
+        });
       },
       { threshold: 0.5 }
     );
 
-    if (skillsRef.current) observer.observe(skillsRef.current);
+    if (skillsRef.current) {
+      observer.observe(skillsRef.current);
+    }
+
     return () => observer.disconnect();
-  }, [hasAnimated]);
+  }, []);
+
+  // Animacao dos Results
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            resultsData.forEach((res, index) => {
+              setTimeout(() => {
+                let start = 0;
+                start += Math.ceil(res.value / 100);
+                const increment = res.value / 60;
+                const timer = setInterval(() => {
+                  start += increment;
+                  if (start >= res.value) {
+                    start = res.value;
+                    clearInterval(timer);
+                  }
+                  setAnimatedResults((prev) => {
+                    const newResults = [...prev];
+                    newResults[index] = Math.round(start);
+                    return newResults;
+                  });
+                }, 40);
+              }, index * 300);
+            });
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (resultsRef.current) {
+      observer.observe(resultsRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const tools = [
     {
       name: "React",
-      color: "rgba(56,189,248,0.6)",
-      icon: <SiReact className="text-sky-400" size={36} />,
+      icon: <SiReact size={32} />,
+      color: "#61DAFB",
     },
     {
       name: "Next.js",
-      color: "rgba(255,255,255,0.3)",
-      icon: <SiNextdotjs className="text-white" size={36} />,
+      icon: <SiNextdotjs size={32} />,
+      color: "#000000",
     },
     {
       name: "JavaScript",
-      color: "rgba(253,224,71,0.6)",
-      icon: <SiJavascript className="text-yellow-400" size={36} />,
+      icon: <SiJavascript size={32} />,
+      color: "#F7DF1E",
     },
     {
       name: "Node.js",
-      color: "rgba(34,197,94,0.6)",
-      icon: <SiNodedotjs className="text-green-500" size={36} />,
+      icon: <SiNodedotjs size={32} />,
+      color: "#339933",
     },
     {
       name: "Express",
-      color: "rgba(209,213,219,0.3)",
-      icon: <SiExpress className="text-gray-300" size={36} />,
+      icon: <SiExpress size={32} />,
+      color: "#000000",
     },
     {
       name: "PostgreSQL",
-      color: "rgba(59,130,246,0.6)",
-      icon: <SiPostgresql className="text-sky-600" size={36} />,
+      icon: <SiPostgresql size={32} />,
+      color: "#336791",
     },
     {
       name: "MariaDB",
-      color: "rgba(96,165,250,0.6)",
-      icon: <SiMariadb className="text-blue-400" size={36} />,
+      icon: <SiMariadb size={32} />,
+      color: "#003545",
     },
     {
       name: "Figma",
-      color: "rgba(244,114,182,0.6)",
-      icon: <SiFigma className="text-pink-500" size={36} />,
+      icon: <SiFigma size={32} />,
+      color: "#F24E1E",
     },
     {
       name: "C++",
-      color: "rgba(37,99,235,0.6)",
-      icon: <SiCplusplus className="text-blue-600" size={36} />,
+      icon: <SiCplusplus size={32} />,
+      color: "#00599C",
     },
     {
       name: "Python",
-      color:
-        "radial-gradient(circle, rgba(250,204,21,0.4) 0%, rgba(59,130,246,0.4) 80%)",
-      icon: <SiPython className="text-yellow-300" size={36} />,
+      icon: <SiPython size={32} />,
+      color: "linear-gradient(45deg, #3776ab 0%, #ffd343 100%)",
     },
     {
       name: "C",
-      color: "rgba(96,165,250,0.6)",
-      icon: <SiC className="text-blue-400" size={36} />,
+      icon: <SiC size={32} />,
+      color: "#A8B9CC",
     },
   ];
 
   return (
-    <main className="min-h-screen bg-[#0b0b0d] text-slate-100 antialiased">
-      {/* FULLSCREEN BACKGROUND */}
-      <div className="fixed inset-0 -z-20">
-        <img
-          src="/imagem5.jpg"
-          alt="futuristic background"
-          className="w-full h-full object-cover brightness-75"
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(10,6,20,0.45) 0%, rgba(3,3,8,0.85) 60%)",
-            mixBlendMode: "overlay",
-          }}
-        />
-      </div>
-
-      {/* NAV */}
-      <header className="container mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="text-2xl font-extrabold tracking-tight text-emerald-300">
-          Luan<span className="text-amber-400">.</span>
-        </div>
-        <nav className="hidden md:flex gap-6 text-sm text-slate-300">
-          <a href="#projects" className="hover:text-amber-300">
-            Projetos
-          </a>
-          <a href="#skills" className="hover:text-amber-300">
-            Skills
-          </a>
-          <a href="#tools" className="hover:text-amber-300">
-            Ferramentas
-          </a>
-          <a href="#contact" className="hover:text-amber-300">
-            Contato
-          </a>
-        </nav>
-        <button className="ml-4 md:ml-0 px-4 py-2 rounded-full bg-amber-500 text-black text-sm font-medium shadow-lg">
-          Hire me
-        </button>
-      </header>
-
-      {/* HERO */}
-      <section className="relative container mx-auto px-6 py-12 md:py-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-10">
-          <motion.div initial="hidden" animate="show" variants={fadeUp}>
-            <p className="text-sm uppercase tracking-wider text-amber-300/80">
-              Desenvolvedor Full-Stack
-            </p>
-            <h1 className="mt-4 text-4xl md:text-6xl font-extrabold leading-tight">
-              Eu sou <span className="text-emerald-300">Luan Rodrigues</span>
-              <br />
-              Desenvolvedor Web
-            </h1>
-            <p className="mt-6 max-w-xl text-slate-300">
-              Crio aplicações completas, performáticas e escaláveis — do backend
-              ao frontend. Experiência com React, Next.js, Node.js, bancos de
-              dados e APIs.
-            </p>
-            <div className="mt-8 flex gap-3">
-              <a
-                className="inline-flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500 text-black font-medium shadow"
-                href="#contact"
-              >
-                Contratar
-              </a>
-              <a
-                className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-slate-700 text-slate-200"
-                href="#projects"
-              >
-                Meus projetos
-              </a>
-            </div>
-          </motion.div>
-
-          {/* VISUAL CARD */}
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-x-hidden">
+      {/* HERO SECTION */}
+      <section className="relative min-h-screen flex items-center justify-center px-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-transparent to-blue-900/20" />
+        <div className="relative z-10 text-center max-w-4xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
-            className="relative w-full max-w-lg mx-auto"
+            transition={{ duration: 0.8 }}
+            className="mb-8"
           >
-            <div className="relative py-6">
-              {/* BACKGROUND EFFECT */}
-              <div className="absolute inset-0 -z-10 pointer-events-none">
-                <div className="absolute inset-0 bg-white/5" />
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -left-24 -top-20 w-[45%] h-[45%] rounded-full bg-blue-700/20 blur-3xl transform -translate-x-8 -translate-y-6" />
-                  <div className="absolute right-0 -bottom-8 w-[30%] h-[30%] rounded-full bg-blue-900/15 blur-2xl" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/10 via-blue-600/5 to-transparent" />
-                </div>
-              </div>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-emerald-300 via-blue-300 to-purple-300 bg-clip-text text-transparent">
+              Luan Rodrigues
+            </h1>
+            <p className="text-xl md:text-2xl text-slate-300 mb-8">
+              Desenvolvedor Full Stack
+            </p>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+              Crio aplicacoes completas, performaticas e escalaveis — do backend
+              ao frontend. Experiencia com React, Next.js, Node.js, bancos de
+              dados e muito mais.
+            </p>
+          </motion.div>
 
-              {/* CENTRAL IMAGE BLOCK */}
-              <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 rounded-3xl">
-                <div className="mx-auto px-6 flex flex-col items-center">
-                  <div className="relative w-full h-56 md:h-64 rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-white/5 backdrop-blur-xl flex items-center justify-center">
-                    <img
-                      src="/imagem3.jpg"
-                      alt="Hero visual"
-                      className="max-h-[85%] object-contain drop-shadow-2xl relative z-10"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/20 via-purple-500/10 to-transparent blur-3xl" />
-                    <div
-                      className="pointer-events-none absolute -inset-1 rounded-3xl border border-transparent"
-                      style={{
-                        boxShadow:
-                          "0 12px 60px rgba(0,0,0,0.5), inset 0 2px 8px rgba(255,255,255,0.05)",
-                      }}
-                    />
-                  </div>
-
-                  {/* FEATURE CARD BELOW IMAGE */}
-                  <div className="mt-4 w-full sm:w-[80%] md:w-[70%] lg:w-[60%]">
-                    <div className="px-5 py-3 rounded-2xl bg-black/50 backdrop-blur-md border border-amber-500/20 shadow-lg text-center">
-                      <h4 className="text-lg md:text-xl font-bold text-amber-300">
-                        Full-Stack Developer
-                      </h4>
-                      <p className="mt-1 text-sm md:text-base text-slate-200/80">
-                        Construindo aplicações web completas, escaláveis e
-                        performáticas
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <a
+              href="#projects"
+              className="px-8 py-4 bg-emerald-500 text-black rounded-xl font-semibold hover:bg-emerald-400 transition-all shadow-lg hover:shadow-emerald-500/25"
+            >
+              Ver Projetos
+            </a>
+            <a
+              href="#contact"
+              className="px-8 py-4 border border-emerald-500 text-emerald-300 rounded-xl font-semibold hover:bg-emerald-500/10 transition-all"
+            >
+              Entre em Contato
+            </a>
           </motion.div>
         </div>
-      </section>
-      {/* ABOUT ME */}
-      <section
-        id="about"
-        className="relative container mx-auto px-6 py-16 md:py-24"
-      >
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-emerald-300">
-          Sobre mim
-        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          {/* Texto */}
-          <div className="space-y-6 text-slate-300 leading-relaxed">
-            <p>
-              Sou{" "}
-              <span className="text-amber-300 font-semibold">
-                Luan Rodrigues
-              </span>
-              , desenvolvedor Full Stack com foco em aplicações web modernas.
-              Sou de Minas Gerais e me mudei para Sertãozinho-SP em busca de
-              novas oportunidades de estudo e trabalho.
-            </p>
-
-            <p>
-              Atualmente, estou concluindo o curso de Mecatrônica na
-              <span className="text-emerald-300"> FATEC de Sertãozinho-SP</span>
-              , mas foi no desenvolvimento web que encontrei minha verdadeira
-              vocação. Apesar de também gostar da área de automação, desde cedo
-              já me arriscava a criar pequenos projetos.
-            </p>
-
-            <p>
-              Gosto de desenvolver soluções práticas e bem estruturadas, sempre
-              unindo
-              <span className="text-amber-300"> tecnologia</span> e
-              <span className="text-amber-300"> usabilidade</span>. Tenho grande
-              interesse por Inteligência Artificial e gosto de aplicá-la em
-              projetos desafiadores que me permitam aprender continuamente.
-            </p>
-
-            <p className="font-medium text-slate-200">
-              Para mim, programar não é apenas profissão — é também uma
-              atividade que faço com prazer.
-            </p>
+        <motion.div
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <div className="w-6 h-10 border-2 border-emerald-300 rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-emerald-300 rounded-full mt-2" />
           </div>
-
-          {/* Imagem */}
-          <div className="relative max-w-sm mx-auto">
-            <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10">
-              <img
-                src="/sobreMim.jpg"
-                alt="Foto de Luan Rodrigues"
-                className="w-full h-80 object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-            </div>
-          </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* SKILLS */}
-      <section
-        ref={skillsRef}
-        id="skills"
-        className="container mx-auto px-6 py-12"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* O que eu faço */}
+      {/* ABOUT SECTION */}
+      <section className="container mx-auto px-6 py-16 md:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <motion.div
-            className="p-6 rounded-2xl bg-gradient-to-br from-white/3 to-white/2 backdrop-blur-md border border-amber-600/10"
-            initial="hidden"
-            animate="show"
-            variants={fadeUp}
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
           >
-            <h3 className="text-xl font-semibold text-amber-300">
-              O que eu faço
-            </h3>
-            <p className="mt-3 text-slate-300">
-              Desenvolvimento Full-Stack, criação de APIs, integração com bancos
-              de dados e aplicações web escaláveis.
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-slate-300">
-              <li>• Back-end com Node.js, Express e MariaDB</li>
-              <li>• Front-end com React, Next.js e TypeScript</li>
-              <li>• Integração de APIs e micro-serviços</li>
-            </ul>
-          </motion.div>
-
-          {/* Habilidades */}
-          <motion.div
-            className="p-6 rounded-2xl bg-gradient-to-br from-white/3 to-white/2 backdrop-blur-md border border-emerald-500/10"
-            initial="hidden"
-            animate="show"
-            variants={fadeUp}
-          >
-            <h3 className="text-xl font-semibold text-emerald-300">
-              Habilidades
-            </h3>
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { label: "Next.js", value: 95, color: "bg-emerald-400" },
-                { label: "TypeScript", value: 92, color: "bg-emerald-300" },
-                { label: "Express", value: 90, color: "bg-emerald-500" },
-                { label: "MariaDB", value: 88, color: "bg-emerald-200" },
-                { label: "React", value: 85, color: "bg-sky-400" },
-                { label: "Node.js", value: 80, color: "bg-green-500" },
-                { label: "Python", value: 75, color: "bg-yellow-400" },
-                { label: "C / C++", value: 40, color: "bg-blue-400" },
-              ].map((skill, i) => (
-                <div key={skill.label} className="text-sm">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-slate-200">{skill.label}</span>
-                    <span className="text-amber-300">
-                      {animatedSkills[i] || 0}%
-                    </span>
-                  </div>
-                  <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${skill.value}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className={`h-full ${skill.color}`}
-                    />
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-emerald-300">
+              Sobre Mim
+            </h2>
+            <div className="space-y-4 text-slate-300 leading-relaxed">
+              <p>
+                Construindo aplicacoes web completas, escalaveis e
+                performaticas
+              </p>
+              <p>
+                Ola! Sou{" "}
+                <span className="text-emerald-300 font-semibold">
+                  Luan Rodrigues
+                </span>
+                , desenvolvedor Full Stack com foco em aplicacoes web modernas.
+                Sou de Minas Gerais e me mudei para Sertaozinho-SP em busca de
+                novas oportunidades.
+              </p>
+              <p>
+                Atualmente, estou concluindo o curso de Mecatronica na
+                <span className="text-emerald-300"> FATEC de Sertaozinho-SP</span>
+                , mas descobri na programacao minha verdadeira
+                vocacao. Apesar de tambem gostar da area de automacao, desde cedo
+                ja me arriscava a criar pequenos projetos.
+              </p>
+              <p>
+                Gosto de desenvolver solucoes praticas e bem estruturadas, sempre
+                buscando as melhores praticas e tecnologias mais atuais. Tenho
+                interesse por Inteligencia Artificial e gosto de aplica-la em
+                projetos quando faz sentido.
+              </p>
+              <p>
+                Para mim, programar nao e apenas profissao — e tambem uma
+                atividade que faco com prazer.
+              </p>
             </div>
           </motion.div>
-          {/* Resultados */}
+
           <motion.div
-            className="p-6 rounded-2xl bg-gradient-to-br from-white/3 to-white/2 backdrop-blur-md border border-cyan-400/10"
-            initial="hidden"
-            animate="show"
-            variants={fadeUp}
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
           >
-            <h3 className="text-xl font-semibold text-cyan-300">Resultados</h3>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-slate-300">
-              {[
-                {
-                  label: "Projetos entregues",
-                  value: 250,
-                  color: "text-amber-300",
-                  suffix: "+",
-                },
-                {
-                  label: "Satisfação de clientes",
-                  value: 95,
-                  color: "text-emerald-300",
-                  suffix: "%",
-                },
-                {
-                  label: "Leads gerados",
-                  value: 1800,
-                  color: "text-blue-300",
-                  suffix: "+",
-                },
-                {
-                  label: "Usuários impactados",
-                  value: 30,
-                  color: "text-pink-300",
-                  suffix: "+",
-                },
-              ].map((res, i) => (
-                <div
-                  key={res.label}
-                  className="flex flex-col items-start sm:items-center"
-                >
-                  <motion.div
-                    className={`text-3xl md:text-4xl font-bold ${res.color}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: 0.1 * i,
-                      duration: 0.5,
-                      ease: "easeOut",
-                    }}
-                  >
-                    {animatedResults[i].toLocaleString()}
-                    {res.suffix}
-                  </motion.div>
-                  <div className="text-sm md:text-base mt-1">{res.label}</div>
-                </div>
-              ))}
+            <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+              <h3 className="text-xl font-semibold mb-4 text-amber-300">
+                {/* O que eu faco */}
+                Especialidades
+              </h3>
+              <p className="text-slate-300 mb-4">
+                O que eu faco
+              </p>
+              <p className="text-slate-400 text-sm mb-4">
+                Desenvolvimento Full-Stack, criacao de APIs, integracao com bancos
+                de dados e aplicacoes web escalaveis.
+              </p>
+              <ul className="text-slate-300 text-sm space-y-2">
+                <li>• Back-end com Node.js, Express e MariaDB</li>
+                <li>• Front-end com React, Next.js e TypeScript</li>
+                <li>• Integracao de APIs e micro-servicos</li>
+                <li>• Deploy e otimizacao de performance</li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
+                <div className="text-2xl font-bold text-emerald-300">3+</div>
+                <div className="text-sm text-slate-400">Anos de Experiencia</div>
+              </div>
+              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
+                <div className="text-2xl font-bold text-blue-300">50+</div>
+                <div className="text-sm text-slate-400">Projetos Concluidos</div>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* TOOLS */}
-      <section id="tools" className="container mx-auto px-6 py-16">
-        <h2 className="text-2xl font-bold text-amber-300 text-center mb-10">
-          Ferramentas & Tecnologias
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
-          {tools.map((tool, i) => (
+      {/* SKILLS SECTION */}
+      <section ref={skillsRef} className="container mx-auto px-6 py-16">
+        <motion.h2
+          className="text-3xl md:text-4xl font-bold text-center mb-12 text-emerald-300"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          Habilidades
+        </motion.h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {skillsData.map((skill, index) => (
             <motion.div
-              key={i}
+              key={skill.label}
+              className="space-y-2"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.6 }}
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300 font-medium">{skill.label}</span>
+                <span className="text-emerald-300 font-semibold">
+                  {animatedSkills[index]}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-700 rounded-full h-2">
+                <motion.div
+                  className="bg-gradient-to-r from-emerald-500 to-blue-500 h-2 rounded-full"
+                  initial={{ width: 0 }}
+                  style={{ width: `${animatedSkills[index]}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* RESULTS SECTION */}
+      <section ref={resultsRef} className="container mx-auto px-6 py-16">
+        <motion.h2
+          className="text-3xl md:text-4xl font-bold text-center mb-12 text-emerald-300"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          Resultados
+        </motion.h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {resultsData.map((result, index) => (
+            <motion.div
+              key={result.label}
+              className="text-center"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.2, duration: 0.6 }}
+            >
+              <div className={`text-4xl md:text-5xl font-bold mb-2 ${result.color}`}>
+                {animatedResults[index]}
+                {result.suffix}
+              </div>
+              <div className="text-slate-400 text-sm">{result.label}</div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* TOOLS SECTION */}
+      <section className="container mx-auto px-6 py-16">
+        <motion.h2
+          className="text-3xl md:text-4xl font-bold text-center mb-12 text-emerald-300"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          Tecnologias
+        </motion.h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          {tools.map((tool, index) => (
+            <motion.div
+              key={tool.name}
               initial="hidden"
-              animate="show"
+              whileInView="show"
               variants={fadeUp}
               className="relative flex flex-col items-center gap-3 p-6 rounded-2xl bg-black/30 border border-slate-700 transition"
               onMouseMove={(e) => {
