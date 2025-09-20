@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Eye, Trash2 } from "lucide-react";
+import { Copy, Eye, Trash2, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import AdminHeader from "../_componetes/header";
+import AdminModal from "../_componetes/adminModal";
 
 type Formulario = {
   id: string;
@@ -33,16 +34,42 @@ type Formulario = {
   criadoEm: string;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function AdminPage() {
   const [formularios, setFormularios] = useState<Formulario[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [selected, setSelected] = useState<Formulario | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
-  // 🔹 Verificar autenticação
+  // Recupera token do localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("adminToken");
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          value?: string;
+          expiresAt?: number;
+        };
+        if (parsed?.expiresAt && parsed.expiresAt < Date.now()) {
+          localStorage.removeItem("adminToken");
+        } else if (parsed?.value) {
+          setToken(parsed.value);
+          return;
+        }
+      }
+      const legacy = localStorage.getItem("token");
+      if (legacy) setToken(legacy);
+    } catch {
+      const legacy = localStorage.getItem("token");
+      if (legacy) setToken(legacy);
+    }
+  }, []);
+
+  // Verificar autenticação
   useEffect(() => {
     const checkAuth = async () => {
       const { isAuthenticated } = await import("@/lib/auth");
@@ -53,43 +80,57 @@ export default function AdminPage() {
     checkAuth();
   }, [router]);
 
-  // 🔹 Buscar dados do backend
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`${API_URL}/users`, {
-          headers: { "Content-Type": "application/json" },
-        });
+  // Função para buscar formulários (reutilizável)
+  const fetchFormularios = async () => {
+    setLoading(true);
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
 
-        if (!response.ok) {
-          throw new Error("Erro ao buscar formulários");
+      const response = await fetch(`/api/proxy/users`, {
+        headers,
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          alert("Sessão expirada. Faça login novamente.");
+          router.push("/adm/login");
+          return;
         }
-
-        const data = await response.json();
-
-        const mapped: Formulario[] = data.map((item: any) => ({
-          id: String(item._id || item.id),
-          nome: item.name || "Sem nome",
-          email: item.email || "",
-          telefone: item.phone || "",
-          mensagem: item.description || "Sem mensagem",
-          status: item.status === "respondido" ? "respondido" : "novo",
-          criadoEm: new Date(item.createdAt).toLocaleString("pt-BR", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }),
-        }));
-
-        setFormularios(mapped);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+        throw new Error("Erro ao buscar formulários");
       }
-    };
 
-    fetchData();
-  }, []);
+      const data = await response.json();
+
+      const mapped: Formulario[] = data.map((item: any) => ({
+        id: String(item._id || item.id),
+        nome: item.name || "Sem nome",
+        email: item.email || "",
+        telefone: item.phone ? String(item.phone) : "",
+        mensagem: item.description || "Sem mensagem",
+        status: item.status === "respondido" ? "respondido" : "novo",
+        criadoEm: new Date(item.createdAt).toLocaleString("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+      }));
+
+      setFormularios(mapped);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Buscar dados do backend ao carregar
+  useEffect(() => {
+    if (token) fetchFormularios();
+  }, [token, router]);
 
   const handleCopy = async (text: string) => {
     try {
@@ -105,11 +146,25 @@ export default function AdminPage() {
     if (!confirm("Tem certeza que deseja apagar este registro?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/users/${id}`, {
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(`/api/proxy/users/${id}`, {
         method: "DELETE",
+        headers,
+        cache: "no-store",
       });
 
-      if (!response.ok) throw new Error("Erro ao apagar registro");
+      if (!response.ok) {
+        if (response.status === 401) {
+          alert("Sessão expirada. Faça login novamente.");
+          router.push("/adm/login");
+          return;
+        }
+        throw new Error("Erro ao apagar registro");
+      }
 
       setFormularios((prev) => prev.filter((f) => f.id !== id));
     } catch (err) {
@@ -118,19 +173,33 @@ export default function AdminPage() {
     }
   };
 
-  // 🔹 Marcar como respondido ao abrir modal
+  // Marcar como respondido ao abrir modal
   const handleView = async (form: Formulario) => {
     setSelected(form);
 
     if (form.status === "novo") {
       try {
-        const res = await fetch(`${API_URL}/users/${form.id}/status`, {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(`/api/proxy/users/${form.id}/status`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ status: "respondido" }),
+          cache: "no-store",
         });
 
-        if (!res.ok) throw new Error("Erro ao atualizar status");
+        if (!res.ok) {
+          if (res.status === 401) {
+            alert("Sessão expirada. Faça login novamente.");
+            router.push("/adm/login");
+            return;
+          }
+          throw new Error("Erro ao atualizar status");
+        }
 
         setFormularios((prev) =>
           prev.map((f) =>
@@ -146,18 +215,38 @@ export default function AdminPage() {
 
   return (
     <>
-      <AdminHeader />
-      <div className="min-h-screen text-slate-100 px-6 py-12 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
-        
+      <AdminHeader onProfileClick={() => setShowAdminModal(true)} />
+
+      <AdminModal
+        open={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        // passe outras props necessárias, ex: token, user info, etc
+      />
+
+      {/* Header com mesmo layout e funcionalidade de Projects */}
+      {/* Mantive o restante do layout */}
+
+      <div className="min-h-screen text-slate-100 px-6 py-12 bg-gradient-to-r from-[#0a1f44] to-[#3a5a40]">
         <h1 className="text-3xl font-bold mb-8 text-center text-slate-100">
           Painel Administrativo
         </h1>
 
         <Card className="bg-slate-900 border border-slate-700 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-2xl text-amber-400">
               Formulários Recebidos
             </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={fetchFormularios}
+                disabled={loading}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-100"
+              >
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                <span className="ml-2">Atualizar lista</span>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -260,8 +349,13 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* 🔹 Modal Detalhes */}
-        <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+        {/* Modal Detalhes */}
+        <Dialog
+          open={!!selected}
+          onOpenChange={(open) => {
+            if (!open) setSelected(null);
+          }}
+        >
           <DialogContent className="bg-slate-900 border border-slate-700 text-slate-200 max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold text-amber-400">

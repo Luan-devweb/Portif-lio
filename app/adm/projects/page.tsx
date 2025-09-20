@@ -32,7 +32,7 @@ import {
   X,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 type Project = {
   _id?: string;
@@ -82,8 +82,9 @@ function ProjectsManager({ token }: { token: string | null }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/projects`, {
-        headers: { ...authHeaders },
+      const res = await fetch(`/api/proxy/projects`, {
+        headers: { Accept: "application/json", ...authHeaders },
+        cache: "no-store",
       });
       if (!res.ok) throw new Error("Falha ao carregar projetos");
       const data: Project[] = await res.json();
@@ -116,13 +117,15 @@ function ProjectsManager({ token }: { token: string | null }) {
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/projects`, {
+      const res = await fetch(`/api/proxy/projects`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           ...authHeaders,
         },
         body: JSON.stringify({ name, description, isPreview, link }),
+        cache: "no-store",
       });
       if (!res.ok) throw new Error("Erro ao criar projeto");
       const created: Project = await res.json();
@@ -164,10 +167,11 @@ function ProjectsManager({ token }: { token: string | null }) {
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/projects/${pid}`, {
+      const res = await fetch(`/api/proxy/projects/${pid}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           ...authHeaders,
         },
         body: JSON.stringify({
@@ -176,6 +180,7 @@ function ProjectsManager({ token }: { token: string | null }) {
           isPreview: editIsPreview,
           link: editLink,
         }),
+        cache: "no-store",
       });
 
       if (!res.ok) {
@@ -223,9 +228,10 @@ function ProjectsManager({ token }: { token: string | null }) {
     }
     if (!confirm("Tem certeza que deseja excluir este projeto?")) return;
     try {
-      const res = await fetch(`${API_URL}/projects/${id}`, {
+      const res = await fetch(`/api/proxy/projects/${id}`, {
         method: "DELETE",
-        headers: { ...authHeaders },
+        headers: { Accept: "application/json", ...authHeaders },
+        cache: "no-store",
       });
       if (!res.ok) throw new Error("Erro ao deletar projeto");
       setProjects((prev) => prev.filter((p) => getPid(p) !== id));

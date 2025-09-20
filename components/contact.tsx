@@ -79,14 +79,18 @@ export default function ContactSection() {
     setErrorField(null);
 
     try {
-      const res = await fetch("http://localhost:5000/api/users", {
+      // Remove formatação do telefone e converte para número (ou undefined se vazio)
+      const cleanPhone = formData.phone.replace(/\D/g, "");
+      const phoneNumber = cleanPhone ? Number(cleanPhone) : undefined;
+
+      const res = await fetch(`/api/proxy/users`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          phone: formData.phone,
-          description: formData.message, // backend espera "description"
+          phone: phoneNumber,
+          description: formData.message,
         }),
       });
 

@@ -20,6 +20,8 @@ import {
 } from "react-icons/si";
 import ContactSection from "../components/contact";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
@@ -69,10 +71,18 @@ export default function Page() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const skillsRef = useRef<HTMLDivElement | null>(null);
+  const [animatedSkills, setAnimatedSkills] = useState(skillsData.map(() => 0));
+  const [animatedResults, setAnimatedResults] = useState(
+    resultsData.map(() => 0)
+  );
+  const [hasAnimated, setHasAnimated] = useState(false);
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/projects");
+        const res = await fetch(`/api/proxy/projects`);
+        if (!res.ok) throw new Error("Erro ao carregar projetos");
         const data = await res.json();
         setProjects(data);
       } catch (error) {
@@ -107,13 +117,6 @@ export default function Page() {
     };
     fetchProjects();
   }, []);
-
-  const [animatedSkills, setAnimatedSkills] = useState(skillsData.map(() => 0));
-  const [animatedResults, setAnimatedResults] = useState(
-    resultsData.map(() => 0)
-  );
-  const skillsRef = useRef<HTMLDivElement | null>(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

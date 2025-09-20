@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, LogIn, Shield } from "lucide-react";
+import { setAuthToken } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -26,7 +27,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/adm/login`, {
+      const response = await fetch(`/api/proxy/adm/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,13 +40,9 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-
-      const tokenData = {
-        value: data.token,
-        expiresAt: new Date(data.expiresIn).getTime(),
-      };
-
-      localStorage.setItem("adminToken", JSON.stringify(tokenData));
+      if (data?.token) {
+        setAuthToken(data.token);
+      }
 
       window.location.href = "/adm/forms";
     } catch (err) {

@@ -67,8 +67,9 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
     const fetchAdmins = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/adm`, {
-          headers: { Authorization: `Bearer ${authToken}` },
+        const res = await fetch(`/api/proxy/adm`, {
+          headers: { Authorization: `Bearer ${authToken}`, Accept: "application/json" },
+          cache: "no-store",
         });
         if (res.status === 401) {
           alert("Sessão expirada. Faça login novamente.");
@@ -102,13 +103,15 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
     if (!newEmail || !newPassword) return alert("Preencha email e senha");
 
     try {
-      const res = await fetch(`${API_URL}/adm`, {
+      const res = await fetch(`/api/proxy/adm`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
+          Accept: "application/json",
         },
         body: JSON.stringify({ email: newEmail, password: newPassword }),
+        cache: "no-store",
       });
 
       const text = await res.text();
@@ -149,17 +152,18 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
     if (!email && !password) return alert("Informe novo email e/ou senha.");
 
     try {
-      // Ajuste método se sua API usar PATCH em vez de PUT
-      const res = await fetch(`${API_URL}/adm/${id}`, {
+      const res = await fetch(`/api/proxy/adm/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
+          Accept: "application/json",
         },
         body: JSON.stringify({
           email: email || undefined,
           password: password || undefined,
         }),
+        cache: "no-store",
       });
 
       const text = await res.text();
@@ -178,7 +182,6 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
 
       const updated = text ? JSON.parse(text) : null;
       if (updated && (updated.id || updated._id || updated.email)) {
-        // atualiza localmente com o que o servidor devolveu ou com editEmail
         setAdmins((prev) =>
           prev.map((a) =>
             a._id === id
@@ -187,11 +190,8 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
           )
         );
       } else {
-        // se backend não devolve o admin atualizado, aplicamos localmente
         setAdmins((prev) =>
-          prev.map((a) =>
-            a._id === id ? { ...a, email: email || a.email } : a
-          )
+          prev.map((a) => (a._id === id ? { ...a, email: email || a.email } : a))
         );
       }
 
@@ -205,23 +205,23 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
     }
   };
 
-  // === DELETE melhorado com feedback do servidor e estado por-id ===
   const handleDeleteAdmin = async (id: string) => {
     if (!authToken) return alert("É necessário estar logado.");
     if (!confirm("Tem certeza que deseja excluir este administrador?")) return;
 
-    // marca o id em processo de deleção
     setDeletingIds((s) => (s.includes(id) ? s : [...s, id]));
     try {
-      const res = await fetch(`${API_URL}/adm/${id}`, {
+      const res = await fetch(`/api/proxy/adm/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
+          Accept: "application/json",
         },
+        cache: "no-store",
       });
 
-      const text = await res.text(); // lê a mensagem do servidor
+      const text = await res.text();
       if (res.status === 401) {
         alert("Sessão expirada. Faça login novamente.");
         try {
@@ -233,29 +233,22 @@ export default function AdminModal({ open, onClose, token }: AdminModalProps) {
 
       if (!res.ok) {
         console.error("DELETE /adm/:id failed:", res.status, text);
-        // tenta parsear JSON com erro amigável
         try {
           const parsed = JSON.parse(text);
           alert(parsed.error || parsed.message || `Erro: ${res.status}`);
         } catch {
           alert(text || `Erro ao excluir administrador (status ${res.status})`);
         }
+        setDeletingIds((s) => s.filter((x) => x !== id));
         return;
       }
 
-      // sucesso: remove localmente e mostra mensagem do servidor se houver
       setAdmins((prev) => prev.filter((a) => a._id !== id));
-      try {
-        const parsed = text ? JSON.parse(text) : null;
-        alert(parsed?.message ?? "Administrador excluído com sucesso");
-      } catch {
-        alert(text || "Administrador excluído com sucesso");
-      }
+      alert("Administrador excluído com sucesso");
     } catch (err) {
       console.error("handleDeleteAdmin error:", err);
       alert("Erro ao excluir administrador (veja console)");
     } finally {
-      // remove id do array deletingIds
       setDeletingIds((s) => s.filter((x) => x !== id));
     }
   };
