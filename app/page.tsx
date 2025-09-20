@@ -18,6 +18,7 @@ import {
   SiInstagram,
   SiWhatsapp,
 } from "react-icons/si";
+import ContactSection from "../components/contact";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 10 },
@@ -56,8 +57,57 @@ const resultsData = [
     suffix: "+",
   },
 ];
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  isPreview: boolean;
+  link: string;
+}
 
 export default function Page() {
+ const [projects, setProjects] = useState<Project[]>([]);
+ const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/projects");
+        const data = await res.json();
+        setProjects(data);
+      } catch (error) {
+        console.error("Erro ao carregar projetos:", error);
+        // Usar projetos estáticos como fallback se a API falhar
+        setProjects([
+          {
+            id: "1",
+            name: "Flowstate — Web App",
+            description: "Redesign de e-commerce com UI moderna",
+            isPreview: false,
+            link: "/imagem2.jpg",
+          },
+          {
+            id: "2",
+            name: "Redsun Dashboard",
+            description: "Dashboard analytics com foco em dados",
+            isPreview: false,
+            link: "/imagem1.jpg",
+          },
+          {
+            id: "3",
+            name: "Portfolio Visual",
+            description: "Landing designer com micro-interações",
+            isPreview: false,
+            link: "/imagem4.jpg",
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+  
   const [animatedSkills, setAnimatedSkills] = useState(skillsData.map(() => 0));
   const [animatedResults, setAnimatedResults] = useState(
     resultsData.map(() => 0)
@@ -106,27 +156,6 @@ export default function Page() {
     if (skillsRef.current) observer.observe(skillsRef.current);
     return () => observer.disconnect();
   }, [hasAnimated]);
-
-  const projects = [
-    {
-      id: 1,
-      title: "Flowstate — Web App",
-      desc: "Redesign de e-commerce com UI moderna",
-      img: "/imagem2.jpg",
-    },
-    {
-      id: 2,
-      title: "Redsun Dashboard",
-      desc: "Dashboard analytics com foco em dados",
-      img: "/imagem1.jpg",
-    },
-    {
-      id: 3,
-      title: "Portfolio Visual",
-      desc: "Landing designer com micro-interações",
-      img: "/imagem4.jpg",
-    },
-  ];
 
   const tools = [
     {
@@ -318,6 +347,64 @@ export default function Page() {
           </motion.div>
         </div>
       </section>
+      {/* ABOUT ME */}
+      <section
+        id="about"
+        className="relative container mx-auto px-6 py-16 md:py-24"
+      >
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-emerald-300">
+          Sobre mim
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          {/* Texto */}
+          <div className="space-y-6 text-slate-300 leading-relaxed">
+            <p>
+              Sou{" "}
+              <span className="text-amber-300 font-semibold">
+                Luan Rodrigues
+              </span>
+              , desenvolvedor Full Stack com foco em aplicações web modernas.
+              Sou de Minas Gerais e me mudei para Sertãozinho-SP em busca de
+              novas oportunidades de estudo e trabalho.
+            </p>
+
+            <p>
+              Atualmente, estou concluindo o curso de Mecatrônica na
+              <span className="text-emerald-300"> FATEC de Sertãozinho-SP</span>
+              , mas foi no desenvolvimento web que encontrei minha verdadeira
+              vocação. Apesar de também gostar da área de automação, desde cedo
+              já me arriscava a criar pequenos projetos.
+            </p>
+
+            <p>
+              Gosto de desenvolver soluções práticas e bem estruturadas, sempre
+              unindo
+              <span className="text-amber-300"> tecnologia</span> e
+              <span className="text-amber-300"> usabilidade</span>. Tenho grande
+              interesse por Inteligência Artificial e gosto de aplicá-la em
+              projetos desafiadores que me permitam aprender continuamente.
+            </p>
+
+            <p className="font-medium text-slate-200">
+              Para mim, programar não é apenas profissão — é também uma
+              atividade que faço com prazer.
+            </p>
+          </div>
+
+          {/* Imagem */}
+          <div className="relative max-w-sm mx-auto">
+            <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10">
+              <img
+                src="/sobreMim.jpg"
+                alt="Foto de Luan Rodrigues"
+                className="w-full h-80 object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* SKILLS */}
       <section
@@ -496,124 +583,71 @@ export default function Page() {
       </section>
 
       {/* PROJECTS */}
-      <section
-        id="projects"
-        className="relative container mx-auto px-6 py-16 md:py-24"
-      >
+      <section id="projects" className="container mx-auto px-6 py-16 md:py-24">
         <motion.h2
           className="text-3xl md:text-4xl font-bold text-center mb-12 text-emerald-300"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
         >
-          Projetos em Destaque 🚀
+          Projetos em Destaque
         </motion.h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            {
-              title: "SaaS para Barbearias",
-              desc: "Parte do cliente do barbeiro: agendamento e login com Google.",
-              img: "/imagem1.jpg",
-              link: "#",
-            },
-            {
-              title: "Clínica Odontológica",
-              desc: "Descrição a completar...",
-              img: "/imagem2.jpg",
-              link: "#",
-            },
-            {
-              title: "Academia",
-              desc: "Descrição a completar...",
-              img: "/ee.jpg",
-              link: "#",
-            },
-            {
-              title: "Corretora de Imóveis",
-              desc: "Descrição a completar...",
-              img: "/imagem4.jpg",
-              link: "#",
-            },
-          ].map((proj, i) => (
-            <motion.div
-              key={proj.title}
-              className="relative rounded-2xl overflow-hidden shadow-lg group cursor-pointer bg-slate-900/50 border border-white/5"
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.15, duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              {/* Imagem do projeto */}
-              <div className="relative h-56 overflow-hidden">
-                <img
-                  src={proj.img}
-                  alt={proj.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-80" />
-              </div>
-
-              {/* Conteúdo do card */}
-              <div className="absolute bottom-0 p-5 w-full">
-                <h3 className="text-xl font-semibold text-amber-300">
-                  {proj.title}
-                </h3>
-                <p className="text-slate-300 text-sm mt-2">{proj.desc}</p>
-                <a
-                  href={proj.link}
-                  className="inline-block mt-4 px-4 py-2 rounded-xl bg-emerald-500 text-black text-sm font-medium hover:bg-emerald-400 transition-colors shadow-md"
-                >
-                  Ver Projeto
-                </a>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {loading ? (
+          <p className="text-center text-slate-400">Carregando projetos...</p>
+        ) : projects.length === 0 ? (
+          <p className="text-center text-slate-400">
+            Nenhum projeto encontrado.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {projects.map((proj, i) => (
+              <motion.div
+                key={proj.id}
+                className="relative rounded-2xl overflow-hidden shadow-lg group bg-slate-900/50 border border-white/5"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15, duration: 0.6 }}
+              >
+                <div className="relative h-80 overflow-hidden">
+                  {proj.isPreview ? (
+                    <iframe
+                      src={proj.link}
+                      className="w-full h-full rounded-t-2xl"
+                      style={{ border: "none" }}
+                    />
+                  ) : (
+                    <img
+                      src={proj.link}
+                      alt={proj.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                </div>
+                <div className="absolute bottom-0 p-5 w-full">
+                  <h3 className="text-xl font-semibold text-amber-300">
+                    {proj.name}
+                  </h3>
+                  <p className="text-slate-300 text-sm mt-2">
+                    {proj.description}
+                  </p>
+                  <a
+                    href={proj.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-4 px-4 py-2 rounded-xl bg-emerald-500 text-black text-sm font-medium hover:bg-emerald-400 transition-colors shadow-md"
+                  >
+                    Ver Projeto
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* CONTACT */}
-      <section id="contact" className="container mx-auto px-6 py-12">
-        <div className="rounded-3xl p-8 bg-gradient-to-br from-white/3 to-white/2 backdrop-blur-md border border-amber-500/8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-2xl font-bold text-amber-300">
-              Vamos trabalhar juntos?
-            </h2>
-            <p className="mt-3 text-slate-300">
-              Me mande os detalhes do seu projeto e eu retorno com um orçamento
-              e prazos.
-            </p>
-            <div className="mt-6 space-y-4 text-slate-200">
-              <div className="flex items-center gap-3">
-                <Phone size={18} /> <span>+55 11 9XXXX-XXXX</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Mail size={18} /> <span>luan@example.com</span>
-              </div>
-            </div>
-          </div>
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <input
-              placeholder="Nome"
-              className="w-full p-3 rounded-xl bg-black/40 border border-slate-700 text-slate-100"
-            />
-            <input
-              placeholder="Email"
-              className="w-full p-3 rounded-xl bg-black/40 border border-slate-700 text-slate-100"
-            />
-            <textarea
-              placeholder="Descreva o projeto"
-              rows={5}
-              className="w-full p-3 rounded-xl bg-black/40 border border-slate-700 text-slate-100"
-            />
-            <button className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-amber-500 text-black font-medium">
-              Enviar mensagem
-            </button>
-          </form>
-        </div>
-      </section>
-
+      <ContactSection />
       <footer className="py-8 text-center text-sm text-slate-400">
         © {new Date().getFullYear()} Luan Rodrigues — Desenvolvedor Web
       </footer>
