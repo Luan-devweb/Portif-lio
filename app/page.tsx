@@ -66,8 +66,8 @@ interface Project {
 }
 
 export default function Page() {
- const [projects, setProjects] = useState<Project[]>([]);
- const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -107,7 +107,7 @@ export default function Page() {
     };
     fetchProjects();
   }, []);
-  
+
   const [animatedSkills, setAnimatedSkills] = useState(skillsData.map(() => 0));
   const [animatedResults, setAnimatedResults] = useState(
     resultsData.map(() => 0)
